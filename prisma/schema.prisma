@@ -1,0 +1,327 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// NextAuth.js Required Models
+// ==========================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==========================================
+// Core Models
+// ==========================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  password      String?
+  image         String?
+  username      String?   @unique
+
+  accounts     Account[]
+  sessions     Session[]
+  portfolio    Portfolio?
+  subscription Subscription?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([username])
+}
+
+model Portfolio {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  avatar          String?
+  avatarStyle     AvatarStyle @default(ROUNDED)
+  headline        String?
+  tagline         String      @default("AI Portfolio")
+  chatPlaceholder String      @default("Ask me anything...")
+
+  // AI Persona (CACHED for prompt)
+  personaName  String?
+  personaRole  String?
+  personaTone  PersonaTone @default(BALANCED)
+  personaRules String?     @db.Text
+
+  // Contact
+  contactEmail String?
+  contactPhone String?
+  linkedinUrl  String?
+  githubUrl    String?
+  websiteUrl   String?
+
+  // Status
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+
+  // Relations
+  projects      Project[]
+  skills        SkillCategory[]
+  funContent    FunContent?
+  resume        Resume?
+  questions     Question[]
+  conversations Conversation[]
+  pageViews     PageView[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isPublished])
+}
+
+// ==========================================
+// Portfolio Content
+// ==========================================
+
+model Project {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?   @db.Text
+  image       String?
+  url         String?
+  techStack   String[]
+  order       Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([portfolioId])
+}
+
+model SkillCategory {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  name   String
+  icon   String?
+  skills String[]
+  order  Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([portfolioId])
+}
+
+model FunContent {
+  id          String    @id @default(cuid())
+  portfolioId String    @unique
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  title       String?
+  description String? @db.Text
+  images      FunImage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FunImage {
+  id           String     @id @default(cuid())
+  funContentId String
+  funContent   FunContent @relation(fields: [funContentId], references: [id], onDelete: Cascade)
+
+  url     String
+  caption String?
+  order   Int     @default(0)
+
+  @@index([funContentId])
+}
+
+model Resume {
+  id          String    @id @default(cuid())
+  portfolioId String    @unique
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  url      String
+  fileName String
+  fileSize Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Question {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  category QuestionCategory
+  text     String
+  order    Int              @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([portfolioId])
+}
+
+// ==========================================
+// Chat & Analytics
+// ==========================================
+
+model Conversation {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  visitorId    String // Anonymous identifier
+  summary      String? @db.Text // Conversation summary for AI context
+  messageCount Int     @default(0)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([portfolioId])
+  @@index([visitorId])
+  @@index([createdAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  role      MessageRole
+  content   String      @db.Text
+  toolCalls Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+}
+
+model PageView {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  visitorId String?
+  path      String
+  referer   String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([portfolioId])
+  @@index([createdAt])
+}
+
+// ==========================================
+// Billing
+// ==========================================
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan                 Plan               @default(FREE)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String?
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stripeCustomerId])
+}
+
+// ==========================================
+// Enums
+// ==========================================
+
+enum Plan {
+  FREE
+  PRO
+  LIFETIME
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+}
+
+enum AvatarStyle {
+  ROUNDED
+  SQUARED
+}
+
+enum PersonaTone {
+  FORMAL
+  BALANCED
+  CASUAL
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum QuestionCategory {
+  ABOUT_ME
+  PROFESSIONAL
+  PROJECTS
+  SKILLS
+  FUN_PERSONAL
+  CONTACT
+}
