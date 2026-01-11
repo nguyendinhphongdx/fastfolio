@@ -27,12 +27,12 @@ export default function PersonaPage() {
         const res = await fetch("/api/portfolio")
         if (res.ok) {
           const data = await res.json()
-          if (data) {
+          if (data.portfolio) {
             setFormData({
-              personaName: data.personaName || "",
-              personaRole: data.personaRole || "",
-              personaTone: data.personaTone || "BALANCED",
-              personaRules: data.personaRules || "",
+              personaName: data.portfolio.personaName || "",
+              personaRole: data.portfolio.personaRole || "",
+              personaTone: data.portfolio.personaTone || "BALANCED",
+              personaRules: data.portfolio.personaRules || "",
             })
           }
         }

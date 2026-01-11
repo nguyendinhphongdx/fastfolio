@@ -1,18 +1,32 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { canAccessAnalytics } from "@/lib/subscription-service"
 
 export async function GET() {
   try {
     const session = await auth()
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check if user can access analytics
+    const hasAccess = await canAccessAnalytics(session.user.id)
+    if (!hasAccess) {
+      return NextResponse.json(
+        {
+          error: "Analytics is a Pro feature",
+          type: "FEATURE_LOCKED",
+          feature: "analytics",
+        },
+        { status: 403 }
+      )
     }
 
     // Get user's portfolio
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: session.user.id },
       include: { portfolio: true },
     })
 

@@ -1,49 +1,51 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Trash2, Briefcase, Code } from "lucide-react"
+import { Plus, Trash2, Briefcase, Code, Loader2, X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 interface Project {
   id?: string
-  title: string
+  name: string
   description: string
   url?: string
-  technologies: string
+  techStack: string[]
 }
 
-interface Skill {
+interface SkillCategory {
   id?: string
   name: string
-  level: string
+  skills: string[]
 }
 
 export default function ContentPage() {
-  const { data: session } = useSession()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(true)
   const [projects, setProjects] = useState<Project[]>([])
-  const [skills, setSkills] = useState<Skill[]>([])
+  const [skillCategories, setSkillCategories] = useState<SkillCategory[]>([])
+  const [newTech, setNewTech] = useState<Record<number, string>>({})
+  const [newSkill, setNewSkill] = useState<Record<number, string>>({})
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const res = await fetch("/api/portfolio")
+        const res = await fetch("/api/portfolio/content")
         if (res.ok) {
           const data = await res.json()
-          if (data) {
-            setProjects(data.projects || [])
-            setSkills(data.skills || [])
-          }
+          setProjects(data.projects || [])
+          setSkillCategories(data.skills || [])
         }
       } catch (error) {
         console.error("Failed to fetch content:", error)
+      } finally {
+        setIsFetching(false)
       }
     }
     fetchContent()
@@ -52,7 +54,7 @@ export default function ContentPage() {
   const addProject = () => {
     setProjects([
       ...projects,
-      { title: "", description: "", url: "", technologies: "" },
+      { name: "", description: "", url: "", techStack: [] },
     ])
   }
 
@@ -60,24 +62,60 @@ export default function ContentPage() {
     setProjects(projects.filter((_, i) => i !== index))
   }
 
-  const updateProject = (index: number, field: keyof Project, value: string) => {
+  const updateProject = (index: number, field: keyof Project, value: string | string[]) => {
     const updated = [...projects]
     updated[index] = { ...updated[index], [field]: value }
     setProjects(updated)
   }
 
-  const addSkill = () => {
-    setSkills([...skills, { name: "", level: "INTERMEDIATE" }])
+  const addTechToProject = (projectIndex: number) => {
+    const tech = newTech[projectIndex]?.trim()
+    if (!tech) return
+
+    const updated = [...projects]
+    if (!updated[projectIndex].techStack.includes(tech)) {
+      updated[projectIndex].techStack = [...updated[projectIndex].techStack, tech]
+      setProjects(updated)
+    }
+    setNewTech({ ...newTech, [projectIndex]: "" })
   }
 
-  const removeSkill = (index: number) => {
-    setSkills(skills.filter((_, i) => i !== index))
+  const removeTechFromProject = (projectIndex: number, techIndex: number) => {
+    const updated = [...projects]
+    updated[projectIndex].techStack = updated[projectIndex].techStack.filter((_, i) => i !== techIndex)
+    setProjects(updated)
   }
 
-  const updateSkill = (index: number, field: keyof Skill, value: string) => {
-    const updated = [...skills]
+  const addSkillCategory = () => {
+    setSkillCategories([...skillCategories, { name: "", skills: [] }])
+  }
+
+  const removeSkillCategory = (index: number) => {
+    setSkillCategories(skillCategories.filter((_, i) => i !== index))
+  }
+
+  const updateSkillCategory = (index: number, field: keyof SkillCategory, value: string | string[]) => {
+    const updated = [...skillCategories]
     updated[index] = { ...updated[index], [field]: value }
-    setSkills(updated)
+    setSkillCategories(updated)
+  }
+
+  const addSkillToCategory = (categoryIndex: number) => {
+    const skill = newSkill[categoryIndex]?.trim()
+    if (!skill) return
+
+    const updated = [...skillCategories]
+    if (!updated[categoryIndex].skills.includes(skill)) {
+      updated[categoryIndex].skills = [...updated[categoryIndex].skills, skill]
+      setSkillCategories(updated)
+    }
+    setNewSkill({ ...newSkill, [categoryIndex]: "" })
+  }
+
+  const removeSkillFromCategory = (categoryIndex: number, skillIndex: number) => {
+    const updated = [...skillCategories]
+    updated[categoryIndex].skills = updated[categoryIndex].skills.filter((_, i) => i !== skillIndex)
+    setSkillCategories(updated)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,7 +126,18 @@ export default function ContentPage() {
       const res = await fetch("/api/portfolio/content", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projects, skills }),
+        body: JSON.stringify({
+          projects: projects.map(p => ({
+            name: p.name,
+            description: p.description,
+            url: p.url,
+            techStack: p.techStack,
+          })),
+          skills: skillCategories.map(s => ({
+            name: s.name,
+            skills: s.skills,
+          })),
+        }),
       })
 
       if (res.ok) {
@@ -97,7 +146,12 @@ export default function ContentPage() {
           description: "Content saved successfully!",
         })
       } else {
-        throw new Error("Failed to save")
+        const error = await res.json()
+        toast({
+          title: "Error",
+          description: error.error || "Failed to save changes",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       toast({
@@ -110,10 +164,18 @@ export default function ContentPage() {
     }
   }
 
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Tools & Content</h1>
+        <h1 className="text-2xl font-bold">Projects & Skills</h1>
         <p className="text-muted-foreground">
           Add projects and skills that your AI can share with visitors
         </p>
@@ -161,12 +223,12 @@ export default function ContentPage() {
                   </Button>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Project Title</Label>
+                      <Label>Project Name</Label>
                       <Input
                         placeholder="e.g., E-commerce Platform"
-                        value={project.title}
+                        value={project.name}
                         onChange={(e) =>
-                          updateProject(index, "title", e.target.value)
+                          updateProject(index, "name", e.target.value)
                         }
                       />
                     </div>
@@ -193,13 +255,41 @@ export default function ContentPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Technologies</Label>
-                    <Input
-                      placeholder="React, Node.js, PostgreSQL..."
-                      value={project.technologies}
-                      onChange={(e) =>
-                        updateProject(index, "technologies", e.target.value)
-                      }
-                    />
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {project.techStack.map((tech, techIndex) => (
+                        <Badge key={techIndex} variant="secondary" className="gap-1">
+                          {tech}
+                          <button
+                            type="button"
+                            onClick={() => removeTechFromProject(index, techIndex)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Add technology..."
+                        value={newTech[index] || ""}
+                        onChange={(e) => setNewTech({ ...newTech, [index]: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            addTechToProject(index)
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => addTechToProject(index)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -207,75 +297,108 @@ export default function ContentPage() {
           </CardContent>
         </Card>
 
-        {/* Skills */}
+        {/* Skill Categories */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Code className="h-5 w-5" />
-                  Skills
+                  Skill Categories
                 </CardTitle>
                 <CardDescription>
-                  List your technical and professional skills
+                  Organize your skills by category
                 </CardDescription>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={addSkill}>
+              <Button type="button" variant="outline" size="sm" onClick={addSkillCategory}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Skill
+                Add Category
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {skills.length === 0 ? (
+            {skillCategories.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No skills yet. Add your skills to let visitors know what you&apos;re good at.
+                No skill categories yet. Add categories to organize your skills.
               </p>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {skills.map((skill, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 border rounded-lg p-3"
+              skillCategories.map((category, index) => (
+                <div
+                  key={index}
+                  className="border rounded-lg p-4 space-y-4 relative"
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeSkillCategory(index)}
                   >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="space-y-2">
+                    <Label>Category Name</Label>
                     <Input
-                      placeholder="Skill name"
-                      value={skill.name}
+                      placeholder="e.g., Frontend, Backend, DevOps..."
+                      value={category.name}
                       onChange={(e) =>
-                        updateSkill(index, "name", e.target.value)
+                        updateSkillCategory(index, "name", e.target.value)
                       }
-                      className="flex-1"
                     />
-                    <select
-                      value={skill.level}
-                      onChange={(e) =>
-                        updateSkill(index, "level", e.target.value)
-                      }
-                      className="h-10 px-3 rounded-md border border-input bg-background text-sm"
-                    >
-                      <option value="BEGINNER">Beginner</option>
-                      <option value="INTERMEDIATE">Intermediate</option>
-                      <option value="ADVANCED">Advanced</option>
-                      <option value="EXPERT">Expert</option>
-                    </select>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeSkill(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-2">
+                    <Label>Skills</Label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {category.skills.map((skill, skillIndex) => (
+                        <Badge key={skillIndex} variant="secondary" className="gap-1">
+                          {skill}
+                          <button
+                            type="button"
+                            onClick={() => removeSkillFromCategory(index, skillIndex)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Add skill..."
+                        value={newSkill[index] || ""}
+                        onChange={(e) => setNewSkill({ ...newSkill, [index]: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            addSkillToCategory(index)
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => addSkillToCategory(index)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </CardContent>
         </Card>
 
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Changes"}
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Changes"
+          )}
         </Button>
       </form>
     </div>

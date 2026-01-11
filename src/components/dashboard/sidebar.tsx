@@ -14,6 +14,8 @@ import {
   LogOut,
   Share2,
   ChevronDown,
+  CreditCard,
+  Settings,
 } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
@@ -29,6 +31,16 @@ const mainLinks = [
     title: "Analytics",
     href: "/analytics",
     icon: BarChart3,
+  },
+  {
+    title: "Billing",
+    href: "/billing",
+    icon: CreditCard,
+  },
+  {
+    title: "Settings",
+    href: "/settings",
+    icon: Settings,
   },
   {
     title: "Publish",

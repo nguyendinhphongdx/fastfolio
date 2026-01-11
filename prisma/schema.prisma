@@ -62,10 +62,11 @@ model User {
   image         String?
   username      String?   @unique
 
-  accounts     Account[]
-  sessions     Session[]
-  portfolio    Portfolio?
-  subscription Subscription?
+  accounts        Account[]
+  sessions        Session[]
+  portfolio       Portfolio?
+  subscription    Subscription?
+  paymentHistory  PaymentHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -104,13 +105,15 @@ model Portfolio {
   publishedAt DateTime?
 
   // Relations
-  projects      Project[]
-  skills        SkillCategory[]
-  funContent    FunContent?
-  resume        Resume?
-  questions     Question[]
-  conversations Conversation[]
-  pageViews     PageView[]
+  projects            Project[]
+  skills              SkillCategory[]
+  funContent          FunContent?
+  resume              Resume?
+  suggestedCategories SuggestedCategory[]
+  questions           Question[]
+  conversations       Conversation[]
+  pageViews           PageView[]
+  llmSettings         LLMSettings?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -195,18 +198,41 @@ model Resume {
   updatedAt DateTime @updatedAt
 }
 
+model SuggestedCategory {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  name      String
+  slug      String    // For URL-friendly identifier
+  icon      String?   // Lucide icon name
+  isSystem  Boolean   @default(false) // true = created by system, false = user created
+  order     Int       @default(0)
+
+  questions Question[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([portfolioId, slug])
+  @@index([portfolioId])
+}
+
 model Question {
   id          String    @id @default(cuid())
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
-  category QuestionCategory
+  categoryId String
+  category   SuggestedCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
   text     String
-  order    Int              @default(0)
+  order    Int       @default(0)
 
   createdAt DateTime @default(now())
 
   @@index([portfolioId])
+  @@index([categoryId])
 }
 
 // ==========================================
@@ -272,16 +298,47 @@ model Subscription {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   plan                 Plan               @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd     DateTime?
+
+  // Payment Provider
+  paymentProvider      PaymentProvider    @default(STRIPE)
+
+  // Stripe specific
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   stripePriceId        String?
-  status               SubscriptionStatus @default(ACTIVE)
-  currentPeriodEnd     DateTime?
+
+  // VNPay specific
+  vnpayTransactionNo   String?
+
+  // MoMo specific
+  momoTransactionId    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([stripeCustomerId])
+}
+
+model PaymentHistory {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider      PaymentProvider
+  transactionId String          @unique
+  amount        Int // In smallest currency unit (cents/VND)
+  currency      String // VND or USD
+  status        PaymentStatus
+  plan          Plan
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([transactionId])
 }
 
 // ==========================================
@@ -317,11 +374,39 @@ enum MessageRole {
   SYSTEM
 }
 
-enum QuestionCategory {
-  ABOUT_ME
-  PROFESSIONAL
-  PROJECTS
-  SKILLS
-  FUN_PERSONAL
-  CONTACT
+enum PaymentProvider {
+  STRIPE
+  VNPAY
+  MOMO
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum LLMProvider {
+  SYSTEM    // Default - uses system's OpenAI key
+  OPENAI
+  ANTHROPIC
+  GOOGLE
+}
+
+// ==========================================
+// LLM Settings (PRO feature)
+// ==========================================
+
+model LLMSettings {
+  id          String      @id @default(cuid())
+  portfolioId String      @unique
+  portfolio   Portfolio   @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  provider    LLMProvider @default(SYSTEM)
+  apiKey      String?     @db.Text // Encrypted API key
+  model       String?     // Selected model ID
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }

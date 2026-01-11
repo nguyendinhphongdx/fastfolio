@@ -7,9 +7,10 @@ interface PortfolioPageProps {
 }
 
 export async function generateMetadata({ params }: PortfolioPageProps) {
-  const { username } = await params
+  const { username: rawUsername } = await params
+  const username = decodeURIComponent(rawUsername)
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.user.findFirst({
     where: { username },
     include: {
       portfolio: true,
@@ -29,10 +30,13 @@ export async function generateMetadata({ params }: PortfolioPageProps) {
 }
 
 export default async function PortfolioPage({ params }: PortfolioPageProps) {
-  const { username } = await params
+  const { username: rawUsername } = await params
+  const username = decodeURIComponent(rawUsername)
 
-  const user = await prisma.user.findUnique({
-    where: { username },
+  console.log("Looking for username:", username, "raw:", rawUsername)
+
+  const user = await prisma.user.findFirst({
+    where: { username: username || undefined },
     include: {
       portfolio: {
         include: {
@@ -50,8 +54,13 @@ export default async function PortfolioPage({ params }: PortfolioPageProps) {
             },
           },
           resume: true,
-          questions: {
+          suggestedCategories: {
             orderBy: { order: "asc" },
+            include: {
+              questions: {
+                orderBy: { order: "asc" },
+              },
+            },
           },
         },
       },

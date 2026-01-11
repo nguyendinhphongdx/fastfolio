@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { createDefaultCategories } from "@/lib/suggested-categories"
 
 export async function GET() {
   try {
@@ -85,6 +86,11 @@ export async function PUT(req: Request) {
       })
     }
 
+    // Check if portfolio already exists
+    const existingPortfolio = await prisma.portfolio.findUnique({
+      where: { userId: session.user.id },
+    })
+
     // Upsert portfolio
     const portfolio = await prisma.portfolio.upsert({
       where: { userId: session.user.id },
@@ -124,6 +130,11 @@ export async function PUT(req: Request) {
         ...(isPublished !== undefined && { isPublished }),
       },
     })
+
+    // If this is a new portfolio, create default suggested categories
+    if (!existingPortfolio) {
+      await createDefaultCategories(portfolio.id)
+    }
 
     return NextResponse.json({ portfolio })
   } catch (error) {

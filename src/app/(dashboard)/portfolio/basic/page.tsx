@@ -1,19 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
+import { Upload, Loader2, X } from "lucide-react"
 
 export default function BasicInfoPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({
     username: "",
     headline: "",
@@ -56,6 +58,57 @@ export default function BasicInfoPage() {
     }
     fetchData()
   }, [])
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.")
+      return
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large. Maximum size is 5MB.")
+      return
+    }
+
+    setIsUploading(true)
+
+    try {
+      const formDataUpload = new FormData()
+      formDataUpload.append("file", file)
+
+      const res = await fetch("/api/upload/avatar", {
+        method: "POST",
+        body: formDataUpload,
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to upload")
+      }
+
+      const { url } = await res.json()
+      setFormData((prev) => ({ ...prev, avatar: url }))
+      toast.success("Avatar uploaded successfully!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to upload avatar")
+    } finally {
+      setIsUploading(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
+
+  function handleRemoveAvatar() {
+    setFormData((prev) => ({ ...prev, avatar: "" }))
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -106,21 +159,60 @@ export default function BasicInfoPage() {
             <CardDescription>Your public profile information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center gap-6">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={formData.avatar} />
-                <AvatarFallback>
-                  {formData.headline?.charAt(0) || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <Label htmlFor="avatar">Avatar URL</Label>
-                <Input
-                  id="avatar"
-                  value={formData.avatar}
-                  onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-                  placeholder="https://..."
-                />
+            <div className="flex items-start gap-6">
+              <div className="relative group">
+                <Avatar className="h-24 w-24 border-2 border-border">
+                  <AvatarImage src={formData.avatar} />
+                  <AvatarFallback className="text-2xl">
+                    {formData.headline?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                {formData.avatar && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <Label>Avatar</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Upload an image (JPEG, PNG, WebP, GIF). Max 5MB.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    id="avatar-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Image
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
 

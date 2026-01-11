@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FluidBackground } from "./fluid-background"
 import { ChatInterface } from "./chat-interface"
+import { QuickActionButtons, type QuickAction } from "@/components/chat"
 import {
   FolderKanban,
   Sparkles,
@@ -14,7 +15,7 @@ import {
   FileText,
   Send,
   User,
-  MapPin
+  MapPin,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -56,7 +57,7 @@ interface PortfolioViewProps {
   username: string
 }
 
-const quickActions = [
+const quickActions: QuickAction[] = [
   { id: "me", label: "Me", icon: User },
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "skills", label: "Skills", icon: Sparkles },
@@ -77,8 +78,8 @@ export function PortfolioView({ portfolio, username }: PortfolioViewProps) {
     }
   }
 
-  function handleQuickAction(action: string) {
-    setQuery(`Show me your ${action}`)
+  function handleQuickAction(actionId: string) {
+    setQuery(`Show me your ${actionId}`)
     setShowChat(true)
   }
 
@@ -100,96 +101,126 @@ export function PortfolioView({ portfolio, username }: PortfolioViewProps) {
     <div className="relative min-h-screen overflow-hidden bg-white">
       <FluidBackground />
 
-      {/* Header */}
-      <header className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10">
-        <Badge variant="outline" className="bg-white/80 backdrop-blur-sm border-gray-200 text-gray-600">
-          @{username}
-        </Badge>
-        <Link href="/" className="text-gray-500 hover:text-gray-800 text-sm font-medium transition-colors">
-          Fastfolio
-        </Link>
-      </header>
+      <PortfolioPageHeader username={username} />
 
-      {/* Main Content */}
       <main className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-20">
         <div className="flex flex-col items-center">
-          {/* Headline */}
           <h2 className="text-lg md:text-xl text-gray-600 text-center mb-2">
             {portfolio.headline || `Hey, I'm ${username}`}
           </h2>
 
-          {/* Tagline - Large */}
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 text-center mb-8">
             {portfolio.tagline}
           </h1>
 
-          {/* Avatar */}
           <Avatar className="h-40 w-40 border-4 border-white shadow-xl mb-10">
-            <AvatarImage src={portfolio.avatar || undefined} />
+            <AvatarImage src={portfolio.avatar || undefined} className="object-cover" />
             <AvatarFallback className="text-5xl bg-gray-100 text-gray-600">
               {portfolio.headline?.charAt(0) || username.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
 
-          {/* Chat Input */}
-          <form
+          <PortfolioInputForm
+            query={query}
+            setQuery={setQuery}
+            isFocused={isFocused}
+            setIsFocused={setIsFocused}
+            placeholder={portfolio.chatPlaceholder}
             onSubmit={handleSubmit}
-            className={`transition-all duration-300 ease-out ${
-              isFocused ? "w-full max-w-2xl" : "w-full max-w-md"
-            }`}
-          >
-            <div
-              className={`relative flex items-center bg-white/70 backdrop-blur-md rounded-full shadow-lg border transition-all duration-300 ${
-                isFocused ? "border-gray-400 shadow-xl bg-white/90" : "border-white/50"
-              }`}
-            >
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholder={portfolio.chatPlaceholder}
-                className="flex-1 border-0 bg-transparent rounded-full py-6 px-6 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-400"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                className={`mr-2 rounded-full transition-all duration-300 ${
-                  isFocused ? "bg-gray-900 hover:bg-gray-800" : "bg-gray-400/50 text-gray-600"
-                }`}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </form>
+          />
 
-          {/* Quick Actions */}
-          <div className="flex flex-wrap justify-center gap-3 mt-8">
-            {quickActions.map((action) => (
-              <Button
-                key={action.id}
-                variant="outline"
-                size="default"
-                className="bg-white/60 backdrop-blur-md hover:bg-white/80 text-gray-700 border-white/50 rounded-xl px-5 py-3 h-auto shadow-sm"
-                onClick={() => handleQuickAction(action.id)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                {action.label}
-              </Button>
-            ))}
+          <div className="mt-8">
+            <QuickActionButtons actions={quickActions} onAction={handleQuickAction} />
           </div>
         </div>
       </main>
 
-      {/* Powered by badge */}
-      <div className="absolute bottom-4 right-4 z-10">
-        <Link
-          href="/"
-          className="text-xs text-gray-400 hover:text-gray-600 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-gray-100 transition-colors"
+      <PoweredByBadge />
+    </div>
+  )
+}
+
+function PortfolioPageHeader({ username }: { username: string }) {
+  return (
+    <header className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10">
+      <Badge
+        variant="outline"
+        className="bg-white/80 backdrop-blur-sm border-gray-200 text-gray-600"
+      >
+        @{username}
+      </Badge>
+      <Link
+        href="/"
+        className="text-gray-500 hover:text-gray-800 text-sm font-medium transition-colors"
+      >
+        Fastfolio
+      </Link>
+    </header>
+  )
+}
+
+function PortfolioInputForm({
+  query,
+  setQuery,
+  isFocused,
+  setIsFocused,
+  placeholder,
+  onSubmit,
+}: {
+  query: string
+  setQuery: (query: string) => void
+  isFocused: boolean
+  setIsFocused: (focused: boolean) => void
+  placeholder: string
+  onSubmit: (e: React.FormEvent) => void
+}) {
+  return (
+    <form
+      onSubmit={onSubmit}
+      className={`transition-all duration-300 ease-out ${
+        isFocused ? "w-full max-w-2xl" : "w-full max-w-md"
+      }`}
+    >
+      <div
+        className={`relative flex items-center bg-white/70 backdrop-blur-md rounded-full shadow-lg border transition-all duration-300 ${
+          isFocused
+            ? "border-gray-400 shadow-xl bg-white/90"
+            : "border-white/50"
+        }`}
+      >
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={placeholder}
+          className="flex-1 border-0 bg-transparent rounded-full py-6 px-6 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-400"
+        />
+        <Button
+          type="submit"
+          size="icon"
+          className={`mr-2 rounded-full transition-all duration-300 ${
+            isFocused
+              ? "bg-gray-900 hover:bg-gray-800"
+              : "bg-gray-400/50 text-gray-600"
+          }`}
         >
-          Powered by Fastfolio
-        </Link>
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
+    </form>
+  )
+}
+
+function PoweredByBadge() {
+  return (
+    <div className="absolute bottom-4 right-4 z-10">
+      <Link
+        href="/"
+        className="text-xs text-gray-400 hover:text-gray-600 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-gray-100 transition-colors"
+      >
+        Powered by Fastfolio
+      </Link>
     </div>
   )
 }
