@@ -28,14 +28,27 @@ const PLAN_DETAILS = {
   PRO: {
     name: "Pro",
     description: "For professionals who need more",
-    features: ["1,000 AI chats/month", "20 projects", "Advanced analytics", "Custom domain", "Priority support"],
+    features: [
+      "1,000 AI chats/month",
+      "20 projects",
+      "Custom AI Provider (OpenAI, Claude, Gemini)",
+      "Advanced analytics",
+      "Custom domain",
+      "Priority support",
+    ],
     icon: Sparkles,
     popular: true,
   },
   LIFETIME: {
     name: "Lifetime",
     description: "One-time payment, forever access",
-    features: ["Unlimited AI chats", "Unlimited projects", "All Pro features", "Lifetime updates"],
+    features: [
+      "Unlimited AI chats",
+      "Unlimited projects",
+      "Custom AI Provider (OpenAI, Claude, Gemini)",
+      "All Pro features",
+      "Lifetime updates",
+    ],
     icon: Crown,
   },
 }

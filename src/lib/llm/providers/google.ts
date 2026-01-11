@@ -47,7 +47,12 @@ export class GoogleProvider implements ILLMProvider {
         role: "user" | "model"
         parts: Array<{ text: string }>
       }>,
-      systemInstruction: systemMessage?.content,
+      ...(systemMessage?.content && {
+        systemInstruction: {
+          role: "user",
+          parts: [{ text: systemMessage.content }],
+        },
+      }),
     })
 
     const result = await chat.sendMessage(lastMessage.content)
@@ -88,7 +93,12 @@ export class GoogleProvider implements ILLMProvider {
         role: "user" | "model"
         parts: Array<{ text: string }>
       }>,
-      systemInstruction: systemMessage?.content,
+      ...(systemMessage?.content && {
+        systemInstruction: {
+          role: "user",
+          parts: [{ text: systemMessage.content }],
+        },
+      }),
     })
 
     const result = await chat.sendMessageStream(lastMessage.content)

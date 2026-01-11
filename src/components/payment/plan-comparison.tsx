@@ -53,6 +53,13 @@ const COMPARISON_FEATURES: Feature[] = [
   },
   // Features
   {
+    name: "Custom AI Provider",
+    category: "Features",
+    free: false,
+    pro: true,
+    lifetime: true,
+  },
+  {
     name: "Custom Domain",
     category: "Features",
     free: false,

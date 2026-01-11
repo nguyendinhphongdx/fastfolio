@@ -19,6 +19,7 @@ export const PLAN_LIMITS = {
     analytics: false,
     removeWatermark: false,
     prioritySupport: false,
+    customAIProvider: false,
 
     // Storage
     maxAvatarSizeMB: 2,
@@ -38,6 +39,7 @@ export const PLAN_LIMITS = {
     analytics: true,
     removeWatermark: true,
     prioritySupport: true,
+    customAIProvider: true,
 
     // Storage
     maxAvatarSizeMB: 10,
@@ -57,6 +59,7 @@ export const PLAN_LIMITS = {
     analytics: true,
     removeWatermark: true,
     prioritySupport: true,
+    customAIProvider: true,
 
     // Storage
     maxAvatarSizeMB: 20,
@@ -182,6 +185,13 @@ export const PLAN_FEATURES = [
     free: "3",
     pro: "10",
     lifetime: "Unlimited",
+  },
+  {
+    name: "Custom AI Provider",
+    description: "Use your own OpenAI, Claude, or Gemini API key",
+    free: false,
+    pro: true,
+    lifetime: true,
   },
   {
     name: "Custom Domain",
