@@ -9,6 +9,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Direct connection (port 5432) - for migrations/db push
+    // MUST use DIRECT_URL, NOT DATABASE_URL (pooler doesn't support prepared statements)
+    url: process.env["DIRECT_URL"],
   },
 });

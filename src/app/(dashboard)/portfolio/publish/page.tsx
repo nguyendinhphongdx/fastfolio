@@ -25,7 +25,7 @@ export default function PublishPage() {
         if (res.ok) {
           const data = await res.json()
           if (data) {
-            setIsPublished(data.isPublished || false)
+            setIsPublished(data.portfolio?.isPublished || false)
             setUsername(data.user?.username || "")
           }
         }

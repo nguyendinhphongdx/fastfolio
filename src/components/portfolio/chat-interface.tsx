@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { FluidBackground } from "./fluid-background"
 import { ToolCard } from "./tool-card"
 import {
   ArrowLeft,
@@ -14,6 +13,7 @@ import {
   PartyPopper,
   Mail,
   FileText,
+  MoreHorizontal,
 } from "lucide-react"
 
 interface Message {
@@ -81,6 +81,7 @@ export function ChatInterface({
   const [isLoading, setIsLoading] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (initialQuery) {
@@ -180,128 +181,174 @@ export function ChatInterface({
     handleSend(`Show me your ${action}`)
   }
 
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-      <FluidBackground />
+  const hasMessages = messages.length > 0
 
-      {/* Header */}
-      <header className="sticky top-0 z-20 flex items-center gap-4 p-4 bg-black/10 backdrop-blur-sm">
+  return (
+    <div className="flex flex-col h-screen bg-white">
+      {/* Header - minimal */}
+      <header className="flex items-center gap-3 px-4 py-3 border-b bg-white">
         <Button
           variant="ghost"
           size="icon"
           onClick={onBack}
-          className="text-white hover:bg-white/20"
+          className="h-8 w-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Avatar className="h-10 w-10 border-2 border-white">
+        <Avatar className="h-8 w-8">
           <AvatarImage src={portfolio.avatar || undefined} />
-          <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarFallback className="text-sm">{username.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <div className="flex-1">
-          <p className="font-medium text-white">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm text-gray-900 truncate">
             {portfolio.headline || username}
           </p>
-          <p className="text-sm text-white/80">{portfolio.tagline}</p>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
       </header>
 
-      {/* Messages */}
-      <main className="relative z-10 flex flex-col min-h-[calc(100vh-140px)] p-4">
-        <div className="flex-1 space-y-4">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === "user"
-                    ? "bg-white text-gray-900"
-                    : "bg-white/20 text-white backdrop-blur-sm"
-                }`}
-              >
-                {/* Tool Cards */}
-                {message.toolCalls?.map((tool, toolIndex) => (
-                  <div key={toolIndex} className="mb-3">
-                    <ToolCard
-                      name={tool.name}
-                      data={tool.data}
-                      portfolio={portfolio}
-                    />
-                  </div>
+      {/* Messages Area */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          {!hasMessages ? (
+            // Empty state - centered content
+            <div className="flex flex-col items-center justify-center min-h-[60vh]">
+              <Avatar className="h-16 w-16 mb-4">
+                <AvatarImage src={portfolio.avatar || undefined} />
+                <AvatarFallback className="text-xl">{username.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">
+                {portfolio.headline || `Chat with ${username}`}
+              </h2>
+              <p className="text-gray-500 text-sm mb-8 text-center max-w-sm">
+                {portfolio.tagline}
+              </p>
+
+              {/* Quick Actions Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-md">
+                {quickActions.map((action) => (
+                  <button
+                    key={action.id}
+                    onClick={() => handleQuickAction(action.id)}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all text-left group"
+                  >
+                    <action.icon className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">{action.label}</span>
+                  </button>
                 ))}
-                {/* Text Content */}
-                {message.content && (
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                )}
               </div>
             </div>
-          ))}
-          {isLoading && messages[messages.length - 1]?.role === "user" && (
-            <div className="flex justify-start">
-              <div className="bg-white/20 text-white backdrop-blur-sm rounded-2xl px-4 py-3">
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-white rounded-full animate-bounce" />
-                  <span className="w-2 h-2 bg-white rounded-full animate-bounce delay-100" />
-                  <span className="w-2 h-2 bg-white rounded-full animate-bounce delay-200" />
+          ) : (
+            // Messages list
+            <div className="space-y-4">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex ${
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {message.role === "assistant" && (
+                    <Avatar className="h-7 w-7 mr-2 mt-1 shrink-0">
+                      <AvatarImage src={portfolio.avatar || undefined} />
+                      <AvatarFallback className="text-xs">{username.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={`max-w-[75%] ${
+                      message.role === "user"
+                        ? "bg-gray-900 text-white rounded-2xl rounded-br-md px-4 py-2.5"
+                        : "text-gray-900"
+                    }`}
+                  >
+                    {/* Tool Cards */}
+                    {message.toolCalls?.map((tool, toolIndex) => (
+                      <div key={toolIndex} className="mb-3">
+                        <ToolCard
+                          name={tool.name}
+                          data={tool.data}
+                          portfolio={portfolio}
+                        />
+                      </div>
+                    ))}
+                    {/* Text Content */}
+                    {message.content && (
+                      <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{message.content}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ))}
+              {isLoading && messages[messages.length - 1]?.role === "user" && (
+                <div className="flex justify-start">
+                  <Avatar className="h-7 w-7 mr-2 mt-1 shrink-0">
+                    <AvatarImage src={portfolio.avatar || undefined} />
+                    <AvatarFallback className="text-xs">{username.charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex gap-1 py-3">
+                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
       </main>
 
-      {/* Input */}
-      <footer className="sticky bottom-0 z-20 p-4 bg-black/10 backdrop-blur-sm">
-        <form onSubmit={handleSubmit}>
-          <div
-            className={`relative flex items-center bg-white rounded-full shadow-lg transition-all ${
-              isFocused ? "ring-2 ring-black" : ""
-            }`}
-          >
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              placeholder={portfolio.chatPlaceholder}
-              className="flex-1 border-0 bg-transparent rounded-full py-5 px-6 focus-visible:ring-0 focus-visible:ring-offset-0"
-              disabled={isLoading}
-            />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={isLoading || !input.trim()}
-              className={`mr-2 rounded-full ${
-                isFocused ? "bg-primary" : "bg-gray-700"
-              }`}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+      {/* Input Area - Fixed at bottom */}
+      <footer className="bg-white px-4 py-4">
+        <div className={`mx-auto transition-all duration-300 ease-out ${isFocused ? "max-w-2xl" : "max-w-md"}`}>
+          {/* Quick Actions - Only show when focused (animate in) */}
+          <div className={`overflow-hidden transition-all duration-300 ease-out ${isFocused ? "max-h-24 opacity-100 mb-4" : "max-h-0 opacity-0 mb-0"}`}>
+            <div className="flex gap-2 justify-center flex-wrap">
+              {quickActions.map((action) => (
+                <button
+                  key={action.id}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    handleQuickAction(action.id)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-gray-50 hover:bg-white hover:border-gray-300 hover:shadow-sm transition-all whitespace-nowrap"
+                >
+                  <action.icon className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">{action.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </form>
 
-        {/* Quick Actions - Show when focused */}
-        {isFocused && (
-          <div className="flex flex-wrap justify-center gap-2 mt-3">
-            {quickActions.map((action) => (
+          {/* Input */}
+          <form onSubmit={handleSubmit}>
+            <div className={`flex items-center gap-3 rounded-2xl border bg-gray-50 px-4 transition-all duration-300 ${isFocused ? "border-gray-300 bg-white shadow-lg py-3" : "border-gray-200 hover:border-gray-300 py-2"}`}>
+              <Input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder={portfolio.chatPlaceholder}
+                className="shadow-none bg-none flex-1 border-0 bg-transparent p-0 h-auto text-base placeholder:text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+                disabled={isLoading}
+              />
               <Button
-                key={action.id}
-                variant="secondary"
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm border-0"
-                onClick={() => handleQuickAction(action.id)}
+                type="submit"
+                size="icon"
+                disabled={isLoading || !input.trim()}
+                className={`shrink-0 rounded-xl bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all duration-300 ${isFocused ? "h-10 w-10" : "h-9 w-9"}`}
               >
-                <action.icon className="h-4 w-4 mr-1" />
-                {action.label}
+                <Send className="h-4 w-4" />
               </Button>
-            ))}
-          </div>
-        )}
+            </div>
+          </form>
+        </div>
       </footer>
     </div>
   )

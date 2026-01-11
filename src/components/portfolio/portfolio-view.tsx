@@ -10,10 +10,11 @@ import { ChatInterface } from "./chat-interface"
 import {
   FolderKanban,
   Sparkles,
-  PartyPopper,
   Mail,
   FileText,
-  Send
+  Send,
+  User,
+  MapPin
 } from "lucide-react"
 import Link from "next/link"
 
@@ -56,10 +57,11 @@ interface PortfolioViewProps {
 }
 
 const quickActions = [
+  { id: "me", label: "Me", icon: User },
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "skills", label: "Skills", icon: Sparkles },
-  { id: "fun", label: "Fun", icon: PartyPopper },
   { id: "contact", label: "Contact", icon: Mail },
+  { id: "location", label: "Location", icon: MapPin },
   { id: "resume", label: "Resume", icon: FileText },
 ]
 
@@ -110,11 +112,7 @@ export function PortfolioView({ portfolio, username }: PortfolioViewProps) {
 
       {/* Main Content */}
       <main className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-20">
-        <div
-          className={`flex flex-col items-center transition-all duration-300 ${
-            isFocused ? "scale-95" : "scale-100"
-          }`}
-        >
+        <div className="flex flex-col items-center">
           {/* Headline */}
           <h2 className="text-lg md:text-xl text-gray-600 text-center mb-2">
             {portfolio.headline || `Hey, I'm ${username}`}
@@ -136,13 +134,13 @@ export function PortfolioView({ portfolio, username }: PortfolioViewProps) {
           {/* Chat Input */}
           <form
             onSubmit={handleSubmit}
-            className={`w-full max-w-xl transition-all duration-300 ${
-              isFocused ? "scale-95" : "scale-100"
+            className={`transition-all duration-300 ease-out ${
+              isFocused ? "w-full max-w-2xl" : "w-full max-w-md"
             }`}
           >
             <div
-              className={`relative flex items-center bg-white rounded-full shadow-lg border transition-all duration-300 ${
-                isFocused ? "border-gray-900 shadow-xl" : "border-gray-200"
+              className={`relative flex items-center bg-white/70 backdrop-blur-md rounded-full shadow-lg border transition-all duration-300 ${
+                isFocused ? "border-gray-400 shadow-xl bg-white/90" : "border-white/50"
               }`}
             >
               <Input
@@ -156,8 +154,8 @@ export function PortfolioView({ portfolio, username }: PortfolioViewProps) {
               <Button
                 type="submit"
                 size="icon"
-                className={`mr-2 rounded-full transition-colors ${
-                  isFocused ? "bg-gray-900 hover:bg-gray-800" : "bg-gray-300 hover:bg-gray-400"
+                className={`mr-2 rounded-full transition-all duration-300 ${
+                  isFocused ? "bg-gray-900 hover:bg-gray-800" : "bg-gray-400/50 text-gray-600"
                 }`}
               >
                 <Send className="h-4 w-4" />
@@ -166,17 +164,13 @@ export function PortfolioView({ portfolio, username }: PortfolioViewProps) {
           </form>
 
           {/* Quick Actions */}
-          <div
-            className={`flex flex-wrap justify-center gap-3 mt-8 transition-all duration-300 ${
-              isFocused ? "scale-95 opacity-80" : "scale-100 opacity-100"
-            }`}
-          >
+          <div className="flex flex-wrap justify-center gap-3 mt-8">
             {quickActions.map((action) => (
               <Button
                 key={action.id}
                 variant="outline"
                 size="default"
-                className="bg-white hover:bg-gray-50 text-gray-700 border-gray-200 rounded-xl px-4 py-2 h-auto"
+                className="bg-white/60 backdrop-blur-md hover:bg-white/80 text-gray-700 border-white/50 rounded-xl px-5 py-3 h-auto shadow-sm"
                 onClick={() => handleQuickAction(action.id)}
               >
                 <action.icon className="h-4 w-4 mr-2" />
