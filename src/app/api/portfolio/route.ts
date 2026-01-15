@@ -58,6 +58,7 @@ export async function PUT(req: Request) {
       personaRole,
       personaTone,
       personaRules,
+      cursorAnimation,
       isPublished,
     } = data
 
@@ -110,6 +111,7 @@ export async function PUT(req: Request) {
         personaRole,
         personaTone,
         personaRules,
+        cursorAnimation,
         isPublished: isPublished || false,
       },
       update: {
@@ -127,6 +129,7 @@ export async function PUT(req: Request) {
         ...(personaRole !== undefined && { personaRole }),
         ...(personaTone !== undefined && { personaTone }),
         ...(personaRules !== undefined && { personaRules }),
+        ...(cursorAnimation !== undefined && { cursorAnimation }),
         ...(isPublished !== undefined && { isPublished }),
       },
     })

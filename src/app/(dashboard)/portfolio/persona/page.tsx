@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { MousePointer2, Droplets, Sparkles, Circle } from "lucide-react"
 
 export default function PersonaPage() {
   const { data: session } = useSession()
@@ -19,6 +20,7 @@ export default function PersonaPage() {
     personaRole: "",
     personaTone: "BALANCED",
     personaRules: "",
+    cursorAnimation: "FLUID",
   })
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function PersonaPage() {
               personaRole: data.portfolio.personaRole || "",
               personaTone: data.portfolio.personaTone || "BALANCED",
               personaRules: data.portfolio.personaRules || "",
+              cursorAnimation: data.portfolio.cursorAnimation || "FLUID",
             })
           }
         }
@@ -169,6 +172,48 @@ export default function PersonaPage() {
               <p className="text-xs text-muted-foreground">
                 These instructions will guide how the AI responds to visitors
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Cursor Animation</CardTitle>
+            <CardDescription>
+              Choose an interactive cursor effect for your portfolio
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-4">
+              {[
+                { value: "NONE", label: "None", icon: Circle, description: "No animation" },
+                { value: "FLUID", label: "Fluid", icon: Droplets, description: "Colorful fluid effect" },
+                { value: "TRAIL", label: "Trail", icon: MousePointer2, description: "Rainbow trail effect" },
+                { value: "PARTICLES", label: "Particles", icon: Sparkles, description: "Particle explosion" },
+              ].map((option) => {
+                const Icon = option.icon
+                const isSelected = formData.cursorAnimation === option.value
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, cursorAnimation: option.value })}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "border-muted hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    <Icon className={`h-6 w-6 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`font-medium text-sm ${isSelected ? "text-primary" : ""}`}>
+                      {option.label}
+                    </span>
+                    <span className="text-xs text-muted-foreground text-center">
+                      {option.description}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </CardContent>
         </Card>

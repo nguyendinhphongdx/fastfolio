@@ -88,10 +88,11 @@ model Portfolio {
   chatPlaceholder String      @default("Ask me anything...")
 
   // AI Persona (CACHED for prompt)
-  personaName  String?
-  personaRole  String?
-  personaTone  PersonaTone @default(BALANCED)
-  personaRules String?     @db.Text
+  personaName     String?
+  personaRole     String?
+  personaTone     PersonaTone     @default(BALANCED)
+  personaRules    String?         @db.Text
+  cursorAnimation CursorAnimation @default(FLUID)
 
   // Contact
   contactEmail String?
@@ -392,6 +393,13 @@ enum LLMProvider {
   OPENAI
   ANTHROPIC
   GOOGLE
+}
+
+enum CursorAnimation {
+  NONE
+  FLUID
+  TRAIL
+  PARTICLES
 }
 
 // ==========================================

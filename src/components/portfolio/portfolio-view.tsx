@@ -6,7 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FluidBackground } from "./fluid-background"
+import { CursorTrail } from "./cursor-trail"
+import { CursorParticles } from "./cursor-particles"
 import { ChatInterface } from "./chat-interface"
+import { CursorAnimation } from "@prisma/client"
 import { QuickActionButtons, type QuickAction } from "@/components/chat"
 import {
   FolderKanban,
@@ -31,6 +34,7 @@ interface PortfolioViewProps {
     linkedinUrl: string | null
     githubUrl: string | null
     websiteUrl: string | null
+    cursorAnimation: CursorAnimation
     projects: Array<{
       id: string
       name: string
@@ -97,9 +101,23 @@ export function PortfolioView({ portfolio, username }: PortfolioViewProps) {
     )
   }
 
+  const renderCursorAnimation = () => {
+    switch (portfolio.cursorAnimation) {
+      case "FLUID":
+        return <FluidBackground />
+      case "TRAIL":
+        return <CursorTrail />
+      case "PARTICLES":
+        return <CursorParticles />
+      case "NONE":
+      default:
+        return null
+    }
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-white">
-      <FluidBackground />
+      {renderCursorAnimation()}
 
       <PortfolioPageHeader username={username} />
 
