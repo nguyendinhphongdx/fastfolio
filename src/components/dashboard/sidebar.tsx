@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -16,6 +17,7 @@ import {
   ChevronDown,
   CreditCard,
   Settings,
+  Shield,
 } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
@@ -47,6 +49,12 @@ const mainLinks = [
     href: "/portfolio/publish",
     icon: Rocket,
   },
+  {
+    title: "Admin",
+    href: "/admin",
+    icon: Shield,
+    adminOnly: true,
+  },
 ]
 
 const configureLinks = [
@@ -76,10 +84,34 @@ export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const user = session?.user
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Check admin status from API
+  useEffect(() => {
+    async function checkAdmin() {
+      try {
+        const res = await fetch("/api/admin/settings")
+        setIsAdmin(res.ok)
+      } catch {
+        setIsAdmin(false)
+      }
+    }
+    if (session) {
+      checkAdmin()
+    }
+  }, [session])
 
   // TODO: Fetch from subscription
   const messagesUsed = 0
   const messagesLimit = 50
+
+  // Filter links based on admin status
+  const filteredMainLinks = mainLinks.filter((link) => {
+    if ('adminOnly' in link && link.adminOnly) {
+      return isAdmin
+    }
+    return true
+  })
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-background">
@@ -97,7 +129,7 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
         {/* Main Links */}
         <div className="space-y-1">
-          {mainLinks.map((link) => {
+          {filteredMainLinks.map((link) => {
             const isActive = pathname === link.href
             return (
               <Link

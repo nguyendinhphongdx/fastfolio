@@ -10,6 +10,7 @@ import { GoogleProvider } from "./providers/google"
 
 /**
  * Create an LLM provider instance based on settings
+ * Note: For SYSTEM provider, use createSystemLLMProvider() instead
  */
 export function createLLMProvider(settings: LLMSettings): ILLMProvider {
   const { provider, apiKey, model } = settings
@@ -29,10 +30,41 @@ export function createLLMProvider(settings: LLMSettings): ILLMProvider {
 
     case LLMProvider.SYSTEM:
     default:
-      // System default uses OpenAI with system key
+      // For SYSTEM provider, we need to get settings from database
+      // This is a sync function, so we fall back to env variable
+      // Use createSystemLLMProvider() for async database lookup
       const systemKey = process.env.OPENAI_API_KEY
-      if (!systemKey) throw new Error("System OpenAI API key not configured")
+      if (!systemKey) throw new Error("System API key not configured. Please configure in Admin Panel.")
       return new OpenAIProvider(systemKey, "gpt-4o-mini")
+  }
+}
+
+/**
+ * Create an LLM provider using system settings from database
+ */
+export async function createSystemLLMProvider(): Promise<ILLMProvider> {
+  // Import here to avoid circular dependency
+  const { getSystemLLMConfig } = await import("@/lib/system-settings")
+  const config = await getSystemLLMConfig()
+
+  if (!config.apiKey) {
+    throw new Error("System API key not configured. Please configure in Admin Panel.")
+  }
+
+  // Create provider based on system settings
+  switch (config.provider) {
+    case LLMProvider.OPENAI:
+      return new OpenAIProvider(config.apiKey, config.model)
+
+    case LLMProvider.ANTHROPIC:
+      return new AnthropicProvider(config.apiKey, config.model)
+
+    case LLMProvider.GOOGLE:
+      return new GoogleProvider(config.apiKey, config.model)
+
+    default:
+      // Default to OpenAI
+      return new OpenAIProvider(config.apiKey, config.model)
   }
 }
 

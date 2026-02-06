@@ -14,7 +14,7 @@ import {
   type ChecklistItem,
 } from "@/components/dashboard"
 
-export default async function DashboardPage() {
+export default async function DashboardPage(): Promise<React.ReactNode> {
   const session = await auth()
 
   if (!session?.user?.id) {

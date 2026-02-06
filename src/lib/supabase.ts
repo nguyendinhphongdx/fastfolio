@@ -11,5 +11,6 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   },
 })
 
-// Storage bucket name
+// Storage bucket names
 export const AVATAR_BUCKET = "avatars"
+export const RESUME_BUCKET = "resumes"

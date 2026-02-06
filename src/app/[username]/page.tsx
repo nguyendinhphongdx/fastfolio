@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PortfolioPageProps) {
   }
 }
 
-export default async function PortfolioPage({ params }: PortfolioPageProps) {
+export default async function PortfolioPage({ params }: PortfolioPageProps): Promise<React.ReactNode> {
   const { username: rawUsername } = await params
   const username = decodeURIComponent(rawUsername)
 
